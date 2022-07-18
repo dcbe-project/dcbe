@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: jenkins-operator
+    jenkins-cr: dcbe
+    watch: "true"
+  name: dcbe-jenkins-conf
+data:
+  1-system-env.yaml: |
+    jenkins:
+      globalNodeProperties:
+      - envVars:
+          env:
+          - key: "DOCKER_REGISTRY"
+            value: 'mt1weudeacrlablcpf01.azurecr.io'
+          - key: "APT_REPO_NFS"
+            value: 'INSERT_NFS_IP_HERE'
+          - key: "APT_REPO_HTTP"
+            value: 'INSERT_HTTP_IP_HERE'
+
+  3-global-jsl.yaml: |
+    unclassified:
+      globalLibraries:
+        libraries:
+        - defaultVersion: "main"
+          name: "dcbe"
+          retriever:
+            modernSCM:
+              libraryPath: "jenkins-shared-library/"
+              scm:
+                git:
+                  remote: "https://github.com/dcbe-project/dcbe"
+                  traits:
+                  - "gitBranchDiscovery"
+
+  9-add-timestamps-to-buildlog.yaml: |
+      unclassified:
+        timestamper:
+          allPipelines: true
+          elapsedTimeFormat: "'<b>'HH:mm:ss.S'</b> '"
+          systemTimeFormat: "'<b>'HH:mm:ss'</b> '"
+
+  10-crumbissuer-to-work-on-aks.yaml: |
+    jenkins:
+      crumbIssuer:
+        standard:
+          excludeClientIPFromCrumb: true

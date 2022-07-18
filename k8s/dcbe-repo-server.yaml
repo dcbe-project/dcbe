@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dcbe-repo-server
+spec:
+  selector:
+    matchLabels:
+      app: dcbe-repo-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dcbe-repo-server
+    spec:
+      containers:
+      - name: dcbe-repo-server-http
+        image: nginx:1.21.1
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: dcbe-repo-pvc
+        - mountPath: /etc/nginx/conf.d
+          name: dcbe-repo-nginx-config
+      - name: dcbe-repo-server-reprepro
+        image: mt1weudeacrlablcpf01.azurecr.io/reprepro:latest
+        volumeMounts:
+        - mountPath: /repo
+          name: dcbe-repo-pvc
+        - mountPath: /repo/conf
+          name: dcbe-repo-distributions-conf
+        - mountPath: /keys
+          name: dcbe-repo-keys
+          readOnly: true
+      - name: dcbe-repo-server-nfs
+        image: iowoi/nfs-server:2022-01-11
+        env:
+          - name: NFS_LOG_LEVEL
+            value: DEBUG
+        ports:
+          - name: nfs
+            containerPort: 2049
+          - name: mountd
+            containerPort: 32765
+          - name: mountd2
+            containerPort: 32766
+          - name: rpcbind
+            containerPort: 111
+          - name: rpcbind2
+            containerPort: 32767
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - mountPath: /share
+            name: dcbe-repo-pvc
+          - mountPath: /share-rw
+            name: dcbe-repo-pvc
+          - mountPath: "/lib/modules"
+            name: vm-modules
+          - mountPath: /etc/exports
+            name: dcbe-nfs-exports
+            subPath: exports
+      volumes:
+        - name: dcbe-repo-keys
+          secret:
+            secretName: dcbe-repo-keys
+            optional: false
+        - name: dcbe-repo-distributions-conf
+          configMap:
+            name: dcbe-repo-distributions-conf
+        - name: dcbe-repo-nginx-config
+          configMap:
+            name: dcbe-repo-nginx-conf
+        - name: dcbe-nfs-exports
+          configMap:
+            name: dcbe-repo-nfs-exports-conf
+        - name: dcbe-repo-pvc
+          persistentVolumeClaim:
+            claimName: dcbe-repo-pvc
+        - name: vm-modules
+          persistentVolumeClaim:
+            claimName: vm-modules-pvc

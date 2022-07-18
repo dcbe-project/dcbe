@@ -1,0 +1,65 @@
+apiVersion: jenkins.io/v1alpha2
+kind: Jenkins
+metadata:
+  name: dcbe
+  labels:
+    app: jenkins-operator
+    jenkins-cr: dcbe
+    watch: "true"
+spec:
+  configurationAsCode:
+    configurations:
+    - name: dcbe-jenkins-conf
+    secret:
+      name: ""
+  groovyScripts:
+    configurations:
+    - name: dcbe-jenkins-conf
+    secret:
+      name: ""
+  jenkinsAPISettings:
+    authorizationStrategy: createUser
+  master:
+    plugins:
+     - name: blueocean
+       version: "1.25.5"
+     - name: timestamper
+       version: "1.18"
+    disableCSRFProtection: false
+    containers:
+      - name: jenkins-master
+        image: jenkins/jenkins:2.319.1-lts-alpine
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 120
+          httpGet:
+            path: /login
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 80
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 100
+          httpGet:
+            path: /login
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 80
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 1500m
+            memory: 8Gi
+          requests:
+            cpu: 1000m
+            memory: 8Gi
+  seedJobs:
+    - id: jenkins-operator
+      targets: "jobs/*.jenkins"
+      description: "Job DSL Reader"
+      repositoryBranch: main
+      repositoryUrl: https://github.com/dcbe-project/dcbe

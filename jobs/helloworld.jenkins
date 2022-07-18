@@ -1,0 +1,28 @@
+#!/usr/bin/env groovy
+
+pipelineJob('hello-world') {
+	displayName('Hello World')
+	logRotator {
+		numToKeep(10)
+		daysToKeep(30)
+	}
+	configure { project ->
+		project / 'properties' / 'org.jenkinsci.plugins.workflow.job.properties.DurabilityHintJobProperty' {
+			hint('PERFORMANCE_OPTIMIZED')
+		}
+	}
+	definition {
+		cpsScm {
+			scm {
+				git {
+					remote {
+						url('https://github.com/dcbe-project/helloworld')
+						branch('main')
+					}
+				}
+			}
+			scriptPath('Jenkinsfile')
+		}
+	}
+}
+
